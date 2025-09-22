@@ -1,66 +1,54 @@
-## Foundry
+# Governance Flow (Governor + Timelock + Token + Box)
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This project demonstrates a simple DAO governance system using OpenZeppelin contracts.  
+The flow is:
 
-Foundry consists of:
+1. **Deploy Governance Token (`GovToken`)**
+   - Mint governance tokens to voters.
+   - Delegate voting power to addresses.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+2. **Deploy Timelock (`Timelock`)**
+   - Acts as the executor for all governance proposals.
+   - Has roles:
+     - `PROPOSER_ROLE` → Assigned to Governor contract.
+     - `EXECUTOR_ROLE` → Can be open (`address(0)`).
+     - `DEFAULT_ADMIN_ROLE` → Revoked for security.
 
-## Documentation
+3. **Deploy Governor (`MyGovernor`)**
+   - Connects governance token and timelock.
+   - Handles:
+     - Proposal creation
+     - Voting
+     - Queuing (via Timelock)
+     - Execution (via Timelock)
 
-https://book.getfoundry.sh/
+4. **Deploy Box (the governed contract)**
+   - Ownable contract where only the Timelock can call `store()`.
 
-## Usage
+---
 
-### Build
+### Governance Lifecycle
 
-```shell
-$ forge build
-```
+1. **Propose**  
+   - A voter proposes an action (e.g., store value in Box).
+   - Governor creates a `proposalId`.
 
-### Test
+2. **Voting**  
+   - Token holders vote (`castVoteWithReason`).
+   - After `votingPeriod`, proposal succeeds or fails.
 
-```shell
-$ forge test
-```
+3. **Queue (Timelock)**  
+   - Successful proposals are scheduled with a delay (`minDelay`).
 
-### Format
+4. **Execute**  
+   - After delay, the proposal can be executed.
+   - Timelock calls the Box contract and updates state.
 
-```shell
-$ forge fmt
-```
+---
 
-### Gas Snapshots
+### Example
+- Propose: `Box.store(777)`
+- Vote: voters approve
+- Queue: scheduled after voting
+- Execute: Box value becomes `777`
 
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
